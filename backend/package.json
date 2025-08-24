@@ -8,5 +8,11 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "devDependencies": {
+    "supabase": "^2.34.3"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.7.0"
+  }
 }
