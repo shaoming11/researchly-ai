@@ -35,15 +35,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
+      console.log('Getting initial session...')
+      const { data: { session }, error } = await supabase.auth.getSession()
+      console.log('Initial session result:', { session: !!session, user: !!session?.user, error })
+      
       if (session?.user) {
-        setUser({
+        const userData = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.name || '',
           university: session.user.user_metadata?.university,
           summary: session.user.user_metadata?.summary
-        })
+        }
+        console.log('Setting user from initial session:', userData)
+        setUser(userData)
       }
       setIsLoading(false)
     }
@@ -52,15 +57,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser({
+      console.log('Auth state change event:', event, 'Session exists:', !!session)
+      
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+        const userData = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.name || '',
           university: session.user.user_metadata?.university,
           summary: session.user.user_metadata?.summary
-        })
+        }
+        console.log('Setting user from auth state change:', userData)
+        setUser(userData)
       } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out')
         setUser(null)
       }
       setIsLoading(false)
@@ -157,6 +167,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!data.user) {
         console.error('No user returned from signup')
         return false
+      }
+      
+      // For confirmed signups, immediately set the user state
+      if (data.session && data.user.email_confirmed_at) {
+        const userData = {
+          id: data.user.id,
+          email: data.user.email!,
+          name: data.user.user_metadata?.name || name,
+          university: data.user.user_metadata?.university || university,
+          summary: data.user.user_metadata?.summary || summary
+        }
+        console.log('Setting user immediately after confirmed signup:', userData)
+        setUser(userData)
       }
       
       console.log('Signup successful, user created:', data.user.id)
